@@ -7,7 +7,6 @@ import fr.efrei.transport.contrat.DemandeDevis;
 import fr.efrei.transport.contrat.DemandeExpedition;
 import fr.efrei.transport.contrat.EtatExpedition;
 import fr.efrei.transport.contrat.Notification;
-import fr.efrei.transport.contrat.Statut;
 import fr.efrei.transport.contrat.SystemeTransport;
 import fr.efrei.transport.contrat.TypeMarchandise;
 
@@ -99,7 +98,7 @@ public class NouveauSystemeAdapter implements SystemeTransport {
 
     @Override
     public Optional<String> facture(String idExpedition) {
-        return Optional.ofNullable(Database.expeditions.get(idExpedition)).map(Expedition::genererFacture);
+        return Optional.ofNullable(Database.expeditions.get(idExpedition)).map(GenerateurFacture::genererFacture);
     }
 
     @Override

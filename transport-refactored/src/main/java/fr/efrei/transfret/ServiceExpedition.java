@@ -8,6 +8,7 @@ import fr.efrei.transport.contrat.ModeTransport;
 import fr.efrei.transport.contrat.TypeClient;
 
 import static fr.efrei.transfret.Utils.arrondir;
+import static fr.efrei.transfret.ValidateurExpedition.validerExpedition;
 import static fr.efrei.transport.contrat.ModeTransport.*;
 import static fr.efrei.transport.contrat.Statut.*;
 import static fr.efrei.transport.contrat.TypeClient.PREMIUM;
@@ -26,74 +27,33 @@ public class ServiceExpedition {
 
     private Database db = Database.getInstance();
     private CalculateurPrix calculateur = new CalculateurPrix();
-    private AffectationVehicule affectation = new AffectationVehicule();
+
 
     public Expedition creerExpedition(Client client, List<Colis> colis, String villeDepart, String villeArrivee, ModeTransport mode, boolean urgent, boolean assurance) {
-        if (client == null) {
-            System.out.println("ERREUR : client obligatoire");
-            return null;
-        }
-        if (colis == null || colis.isEmpty()) {
-            System.out.println("ERREUR : au moins un colis est nécessaire");
-            return null;
-        }
-        boolean dangereux = false;
-        boolean refrigere = false;
-        for (Colis c : colis) {
-            if (c.getPoids() <= 0) {
-                System.out.println("ERREUR : poids invalide pour " + c.getDescription());
-                return null;
-            }
-            if (c.getType().equals(DANGEREUX)) dangereux = true;
-            if (c.getType().equals(REFRIGERE)) refrigere = true;
-        }
-        if (dangereux && mode.equals(AIR)) {
-            System.out.println("ERREUR : les matières dangereuses sont interdites en transport aérien");
-            return null;
-        }
-        if (refrigere && !(mode.equals(ROUTE) || mode.equals(MER))) {
-            System.out.println("ERREUR : le transport réfrigéré n'est possible que par route ou par mer");
-            return null;
-        }
-        if (urgent && mode.equals(MER)) {
-            System.out.println("ERREUR : pas d'option urgente pour le transport maritime");
-            return null;
-        }
-        int distance = Utils.getDistance(villeDepart, villeArrivee);
-        if (distance == -1) {
-            System.out.println("ERREUR : trajet inconnu " + villeDepart + " -> " + villeArrivee);
-            return null;
-        }
-
-        Vehicule v = affectation.trouverVehicule(colis, mode);
-        if (v == null) {
-            System.out.println("ERREUR : aucun véhicule disponible pour cette expédition");
-            return null;
-        }
-        for (Colis c : colis) {
-            v.charger(c);
-        }
-
         Expedition e = new Expedition();
+        e.setClient(client);
         compteur++;
         e.setId("EXP-" + compteur + "-" + (1000 + new Random().nextInt(9000)));
         e.setClient(client);
         e.setColis(colis);
         e.setVilleDepart(villeDepart);
         e.setVilleArrivee(villeArrivee);
-        e.setDistance(distance);
+        e.setDistance(ValidateurExpedition.calculDistance(e));
         e.setMode(mode);
         e.setUrgent(urgent);
         e.setAssurance(assurance);
         e.setStatut(CREEE);
-        e.setVehicule(v);
-        e.setPrixHT(calculateur.calculerPrixHT(colis, distance, mode, urgent, assurance, client.getType()));
+        e.setVehicule(ValidateurExpedition.affecterVehicule(e));
+        e.setPrixHT(calculateur.calculerPrixHT(colis, ValidateurExpedition.calculDistance(e), mode, urgent, assurance, client.getType()));
         e.setPrixTTC(arrondir(e.getPrixHT() * 1.2));
         e.setDateCreation(new Date());
         Calendar cal = Calendar.getInstance();
         cal.setTime(e.getDateCreation());
-        cal.add(Calendar.DAY_OF_MONTH, calculerDelai(distance, mode, urgent));
+        cal.add(Calendar.DAY_OF_MONTH, EstimateurDelai.calculerDelai(ValidateurExpedition.calculDistance(e), mode, urgent));
         e.setDateLivraisonPrevue(cal.getTime());
+
+        validerExpedition(e);
+
 
         db.sauvegarderExpedition(e);
         notifier(client, "Confirmation de votre expédition " + e.getId(),
@@ -110,35 +70,6 @@ public class ServiceExpedition {
         }
         double ht = calculateur.calculerPrixHT(colis, distance, mode, urgent, assurance, typeClient);
         return arrondir(ht * 1.2);
-    }
-
-    // retourne le délai de livraison en jours
-    public int calculerDelai(int distance, ModeTransport mode, boolean urgent) {
-        int jours = 0;
-        switch (mode) {
-            case ROUTE:
-                double heures = distance / 70.0;
-                if (urgent) {
-                    jours = (int) Math.ceil(heures / 18);
-                } else {
-                    jours = (int) Math.ceil(heures / 9);
-                }
-                break;
-            case RAIL:
-                jours = (int) Math.ceil(distance / 1440.0) + 1;
-                if (urgent) jours = jours - 1;
-                break;
-            case MER:
-                jours = (int) Math.ceil(distance / 720.0) + 2;
-                break;
-            case AIR:
-                jours = 1;
-                if (distance > 3000) jours = 2;
-                if (urgent) jours = 1;
-                break;
-        }
-        if (jours < 1) jours = 1;
-        return jours;
     }
 
     public boolean demarrerExpedition(String id) {
