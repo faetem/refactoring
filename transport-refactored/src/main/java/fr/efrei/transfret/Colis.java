@@ -1,5 +1,7 @@
 package fr.efrei.transfret;
 
+import fr.efrei.transport.contrat.TypeMarchandise;
+
 public class Colis {
 
     public static final int STANDARD = 0;
@@ -12,10 +14,10 @@ public class Colis {
     private double longueur;     // en cm
     private double largeur;      // en cm
     private double hauteur;      // en cm
-    private int type;            // 0 = standard, 1 = fragile, 2 = dangereux, 3 = refrigere
+    private TypeMarchandise type;            // 0 = standard, 1 = fragile, 2 = dangereux, 3 = refrigere
     private double valeurDeclaree;
 
-    public Colis(String description, double poids, double longueur, double largeur, double hauteur, int type, double valeurDeclaree) {
+    public Colis(String description, double poids, double longueur, double largeur, double hauteur, TypeMarchandise type, double valeurDeclaree) {
         this.description = description;
         this.poids = poids;
         this.longueur = longueur;
@@ -32,13 +34,13 @@ public class Colis {
 
     public String getLibelleType() {
         switch (type) {
-            case 0:
+            case STANDARD:
                 return "Standard";
-            case 1:
+            case FRAGILE:
                 return "Fragile";
-            case 2:
+            case DANGEREUX:
                 return "Dangereux";
-            case 3:
+            case REFRIGERE:
                 return "Réfrigéré";
             default:
                 return "Inconnu";
@@ -85,11 +87,11 @@ public class Colis {
         this.hauteur = hauteur;
     }
 
-    public int getType() {
+    public TypeMarchandise getType() {
         return type;
     }
 
-    public void setType(int type) {
+    public void setType(TypeMarchandise type) {
         this.type = type;
     }
 

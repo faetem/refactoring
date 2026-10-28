@@ -2,6 +2,8 @@ package fr.efrei.transfret;
 
 import fr.efrei.transfret.Colis;
 
+import static fr.efrei.transport.contrat.TypeMarchandise.REFRIGERE;
+
 public class CamionFrigorifique extends Camion {
 
     public CamionFrigorifique(String immatriculation, double capaciteMax) {
@@ -11,7 +13,7 @@ public class CamionFrigorifique extends Camion {
     @Override
     public void charger(Colis colis) {
         // un camion frigo ne prend QUE des colis réfrigérés
-        if (colis.getType() != 3) {
+        if (!colis.getType().equals(REFRIGERE)) {
             throw new IllegalArgumentException("Un camion frigorifique ne transporte que des produits réfrigérés");
         }
         super.charger(colis);

@@ -46,7 +46,7 @@ public class NouveauSystemeAdapter implements SystemeTransport {
                 demande.email(),
                 demande.telephone(),
                 demande.adresse(),
-                demande.type().name(),
+                demande.type(),
                 demande.siret());
         return Optional.ofNullable(client).map(Client::getEmail);
     }
@@ -58,7 +58,7 @@ public class NouveauSystemeAdapter implements SystemeTransport {
                 demande.colis()),
                 demande.villeDepart(),
                 demande.villeArrivee(),
-                demande.mode().name(),
+                demande.mode(),
                 demande.urgent(),
                 demande.assurance());
         return Optional.ofNullable(expedition).map(Expedition::getId);
@@ -71,14 +71,14 @@ public class NouveauSystemeAdapter implements SystemeTransport {
             return Optional.empty();
         }
         int delai = (int) ChronoUnit.DAYS.between(jour(e.getDateCreation()), jour(e.getDateLivraisonPrevue()));
-        return Optional.of(new EtatExpedition(e.getId(), Statut.valueOf(e.getStatut()), e.getPrixHT(), e.getPrixTTC(),
+        return Optional.of(new EtatExpedition(e.getId(), e.getStatut(), e.getPrixHT(), e.getPrixTTC(),
                 delai, e.getVehicule().getImmatriculation(), e.getFraisAnnulation()));
     }
 
     @Override
     public OptionalDouble devisTTC(DemandeDevis demande) {
         double devis = serviceExpedition.calculerDevis(versColis(demande.colis()), demande.villeDepart(), demande.villeArrivee(),
-                demande.mode().name(), demande.urgent(), demande.assurance(), demande.typeClient().name());
+                demande.mode(), demande.urgent(), demande.assurance(), demande.typeClient());
         return devis == -1 ? OptionalDouble.empty() : OptionalDouble.of(devis);
     }
 
@@ -124,7 +124,7 @@ public class NouveauSystemeAdapter implements SystemeTransport {
 
     private static Colis versColis(ColisDto c) {
         return new Colis(c.description(), c.poidsKg(), c.longueurCm(), c.largeurCm(), c.hauteurCm(),
-                codeType(c.type()), c.valeurDeclaree());
+                c.type(), c.valeurDeclaree());
     }
 
     private static int codeType(TypeMarchandise type) {
